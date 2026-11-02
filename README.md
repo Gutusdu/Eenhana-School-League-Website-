@@ -1,11 +1,18 @@
-# Eenhana School League – flat GitHub upload
+# Eenhana School League
 
-All files are in one folder. Upload **all files**, not the ZIP, to the root of your GitHub repository. Keep filenames unchanged.
+Vite + React website for the Eenhana School League (U15 Boys and U15 Girls), connected to Supabase.
 
-Deploy on Vercel using framework preset **Vite**, build command `npm run build`, output directory `dist`. Do not upload `dist` or `node_modules`.
+## Setup
+1. Install dependencies: `npm install`
+2. Copy `.env.example` to `.env` and fill in the Supabase project URL and publishable key.
+3. Run the original `schema.sql` in the Supabase SQL Editor if setting up a fresh project.
+4. For an existing project created with the original schema, run `migration-match-events.sql` once in the Supabase SQL Editor.
+5. Start locally with `npm run dev`; deploy through the connected Vercel/GitHub project.
 
-For live data: create a Supabase project and run `schema.sql` in SQL Editor **only on a fresh project**. Set Vercel environment variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (publishable/anon, NEVER service_role). Redeploy after adding variables.
+The official league logo is stored in `public/assets/eenhana-school-league-logo.jpeg` and used in the header and footer.
 
-Create admin user through Supabase Auth and manually insert their user UUID into `public.admin_users` following the schema. Disable public sign-ups and verify RLS.
+## Match events
+The match center supports goal, penalty, own goal, yellow card, red card and substitution events, with optional minute, player and short details (e.g. “Elfmeter”). Admins can edit an event inline or delete it after typing `LÖSCHEN`. Scoring events update the match score through the database trigger in the migration.
 
-The site displays example data until Supabase is configured.
+## Security
+The browser uses only the Supabase publishable key. Keep the service-role key out of the frontend. Database write access must remain protected by the Supabase RLS policies and the `admin_users` membership table.
