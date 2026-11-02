@@ -5,7 +5,7 @@ import {
   Users, ChartNoAxesColumnIncreasing, CircleDot, Star, CheckCircle2,
   AlertCircle, ExternalLink
 } from 'lucide-react';
-import { isConfigured, supabase } from './supabase';
+import { isConfigured, supabase } from './supabase'; 
 
 const demoTeams = [
   { id: 't1', name: 'Eenhana Primary', short_name: 'EPR', group_name: 'U15 Boys', color: '#e7b94e' },
