@@ -1,19 +1,14 @@
-# Eenhana School League – Website
+# Eenhana School League
+
+## Update
+- English is the default language; use the EN/DE button in the header to switch language.
+- Top Scorers (Top 10) and the Fair Play table are shown on the homepage.
+- Fair Play scoring: 1 point per yellow card and 3 points per red card; lower score ranks higher.
+- The logo is imported directly from `logo.jpeg` by the React app, avoiding the broken public URL.
 
 ## Deployment
-This project uses Vite, React and Supabase. Keep all project files together in the repository root (no assets subfolder is required). The league crest is loaded from `/logo.jpeg` with `/eenhana-school-league-logo.jpeg` as a fallback.
+Replace the matching files in the GitHub repository root with the files in this ZIP. Vercel should deploy automatically from the connected repository.
 
-1. Upload/replace the project files in the root of the GitHub repository.
-2. Vercel should deploy automatically from the connected repository.
-3. Supabase credentials are already configured in `supabase.js` using the browser-safe publishable key. Never add a service-role key to frontend code.
-4. The database must have the tables from `schema.sql`. For match timeline events, run `migration-match-events.sql` in Supabase SQL Editor.
+No database migration is required for these display-only statistics. Fair Play uses `match_events`. Top Scorers uses `match_events` and falls back to the legacy `goals` table if there are no goal events.
 
-## Features
-- U15 Boys and U15 Girls competitions
-- Fixtures, results and automatically calculated standings
-- Team profiles and player rosters
-- Match event timeline (goals, penalties, own goals, cards, substitutions)
-- Admin-only inline edit and delete actions; edits open prefilled dialogs, deletion requires typing `LÖSCHEN`
-
-## Important
-The website starts with an empty database view; it does not seed demo teams or fixtures. Existing Supabase data is not deleted by this frontend. Admin writes require the signed-in user to be present in `public.admin_users`.
+The production build could not be verified in this environment because dependency installation did not complete. Check the Vercel deployment status after pushing.
