@@ -23,7 +23,8 @@ grant select on public.match_events to anon, authenticated;
 grant insert, update, delete on public.match_events to authenticated;
 
 -- Goal-like events update the match score automatically. For an own goal,
--- select the team that receives the goal in the Team field.
+-- select the team that receives the goal in the Team field. Match status is
+-- intentionally not changed: a single goal must not mark a match as finished.
 create or replace function public.apply_match_event_score()
 returns trigger language plpgsql security definer set search_path = public as $$
 declare
@@ -41,8 +42,7 @@ begin
   if new_scoring and (tg_op = 'INSERT' or old.match_id is distinct from new.match_id or old.team_id is distinct from new.team_id or old.event_type is distinct from new.event_type) then
     update public.matches set
       home_score = case when home_team_id = new.team_id then coalesce(home_score,0)+1 else home_score end,
-      away_score = case when away_team_id = new.team_id then coalesce(away_score,0)+1 else away_score end,
-      status = 'completed'
+      away_score = case when away_team_id = new.team_id then coalesce(away_score,0)+1 else away_score end
     where id = new.match_id;
   end if;
   if tg_op = 'DELETE' then return old; else return new; end if;
