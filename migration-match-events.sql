@@ -51,3 +51,43 @@ drop trigger if exists match_event_score_trigger on public.match_events;
 create trigger match_event_score_trigger
 after insert or update or delete on public.match_events
 for each row execute function public.apply_match_event_score();
+
+-- Player-linked events and substitutions.
+alter table public.match_events
+  add column if not exists related_player_id uuid references public.players(id) on delete set null;
+
+-- Enforce that event participants are registered in this match's squad.
+create or replace function public.validate_match_event_players()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.player_id is null then
+    raise exception 'Bitte einen registrierten Spieler aus dem Spieltagskader auswählen.';
+  end if;
+  if not exists (
+    select 1 from public.match_lineups l
+    where l.match_id = new.match_id and l.team_id = new.team_id and l.player_id = new.player_id
+  ) then
+    raise exception 'Der ausgewählte Spieler steht nicht im Spieltagskader dieses Teams.';
+  end if;
+  if new.event_type = 'substitution' then
+    if new.related_player_id is null then
+      raise exception 'Für eine Einwechslung müssen ein ein- und ein ausgewechselter Spieler ausgewählt werden.';
+    end if;
+    if not exists (
+      select 1 from public.match_lineups l
+      where l.match_id = new.match_id and l.team_id = new.team_id and l.player_id = new.related_player_id
+    ) then
+      raise exception 'Der ausgewechselte Spieler steht nicht im Spieltagskader dieses Teams.';
+    end if;
+    if new.related_player_id = new.player_id then
+      raise exception 'Ein Spieler kann nicht für sich selbst eingewechselt werden.';
+    end if;
+  else
+    new.related_player_id := null;
+  end if;
+  return new;
+end; $$;
+drop trigger if exists validate_match_event_players_trigger on public.match_events;
+create trigger validate_match_event_players_trigger
+before insert or update on public.match_events
+for each row execute function public.validate_match_event_players();
