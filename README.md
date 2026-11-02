@@ -1,18 +1,17 @@
 # Eenhana School League
 
-Vite + React website for the Eenhana School League (U15 Boys and U15 Girls), connected to Supabase.
+## Dateien
+Alle Dateien liegen direkt im Hauptverzeichnis. Es gibt bewusst keine Unterordner.
 
-## Setup
-1. Install dependencies: `npm install`
-2. Copy `.env.example` to `.env` and fill in the Supabase project URL and publishable key.
-3. Run the original `schema.sql` in the Supabase SQL Editor if setting up a fresh project.
-4. For an existing project created with the original schema, run `migration-match-events.sql` once in the Supabase SQL Editor.
-5. Start locally with `npm run dev`; deploy through the connected Vercel/GitHub project.
+- `index.html` – Einstiegspunkt
+- `App.jsx`, `main.jsx` – React-Anwendung
+- `styles.css` – Gestaltung
+- `logo.jpeg` – Eenhana School League Logo
+- `supabase.js` und `schema.sql` – Supabase-Anbindung und Datenbankschema
 
-The official league logo is stored in `public/assets/eenhana-school-league-logo.jpeg` and used in the header and footer.
+## Start
+1. Alle Dateien aus dieser ZIP direkt in das Hauptverzeichnis des GitHub-Repositories hochladen.
+2. In Vercel wird die Anwendung wie bisher über das verbundene Repository gebaut.
+3. Das Logo wird unter `/logo.jpeg` geladen; es liegt neben `index.html`, nicht in einem Ordner.
 
-## Match events
-The match center supports goal, penalty, own goal, yellow card, red card and substitution events, with optional minute, player and short details (e.g. “Elfmeter”). Admins can edit an event inline or delete it after typing `LÖSCHEN`. Scoring events update the match score through the database trigger in the migration.
-
-## Security
-The browser uses only the Supabase publishable key. Keep the service-role key out of the frontend. Database write access must remain protected by the Supabase RLS policies and the `admin_users` membership table.
+Die Supabase-Zugangsdaten werden über die in `.env.example` aufgeführten Vite-Variablen gesetzt.

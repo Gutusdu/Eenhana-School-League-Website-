@@ -43,9 +43,6 @@ function App() {
   const [teams, setTeams] = useState(demoTeams);
   const [matches, setMatches] = useState(demoMatches);
   const [goals, setGoals] = useState(demoGoals);
-  const [events, setEvents] = useState([]);
-  const [eventForm, setEventForm] = useState({ event_type:'goal', match_id:'', team_id:'', player_id:'', player_name:'', minute:'', details:'' });
-  const [editingEvent, setEditingEvent] = useState(null);
   const [players, setPlayers] = useState([]);
   const [lineups, setLineups] = useState([]);
   const [reports, setReports] = useState(demoReports);
@@ -80,13 +77,11 @@ function App() {
       supabase.from('players').select('*').order('shirt_number'),
       supabase.from('match_lineups').select('*')
     ]);
-    const ev = await supabase.from('match_events').select('*').order('minute');
-    const errors = [t.error, m.error, g.error, r.error, p.error, l.error, ev.error].filter(Boolean);
+    const errors = [t.error, m.error, g.error, r.error, p.error, l.error].filter(Boolean);
     if (errors.length) setNotice(`Database notice: ${errors[0].message}`);
     if (t.data) setTeams(t.data);
     if (m.data) setMatches(m.data);
     if (g.data) setGoals(g.data);
-    if (ev.data) setEvents(ev.data);
     if (r.data) setReports(r.data);
     if (p.data) setPlayers(p.data);
     if (l.data) setLineups(l.data);
@@ -199,24 +194,6 @@ function App() {
     const { error } = await supabase.from('goals').insert({ ...newGoal, minute: newGoal.minute ? Number(newGoal.minute) : null });
     if (error) setNotice(error.message); else { setNewGoal({ match_id:'', player_name:'', team_id:'', minute:'' }); setNotice('Goal added to the scorer list.'); loadData(); }
   }
-  async function saveEvent(e) {
-    e.preventDefault();
-    const payload = { event_type:eventForm.event_type, match_id:selectedMatch.id, team_id:eventForm.team_id, player_id:eventForm.player_id || null, player_name:eventForm.player_name || (players.find(p=>String(p.id)===String(eventForm.player_id))?.full_name ?? null), minute:eventForm.minute ? Number(eventForm.minute) : null, details:eventForm.details.trim() || null };
-    const query = editingEvent ? supabase.from('match_events').update(payload).eq('id', editingEvent.id) : supabase.from('match_events').insert(payload);
-    const { error } = await query;
-    if (error) setNotice(error.message); else { setNotice(editingEvent ? 'Spielereignis aktualisiert.' : 'Spielereignis hinzugefügt.'); setEditingEvent(null); setEventForm({ event_type:'goal', match_id:'', team_id:'', player_id:'', player_name:'', minute:'', details:'' }); await loadData(); }
-  }
-  function startEditEvent(ev) {
-    setEditingEvent(ev);
-    setEventForm({ event_type:ev.event_type, match_id:ev.match_id, team_id:ev.team_id, player_id:ev.player_id||'', player_name:ev.player_name||'', minute:ev.minute??'', details:ev.details||'' });
-  }
-  async function deleteEvent(ev) {
-    const typed = window.prompt('Zum Löschen bitte exakt LÖSCHEN eingeben:');
-    if (typed !== 'LÖSCHEN') return;
-    const { error } = await supabase.from('match_events').delete().eq('id', ev.id);
-    if (error) setNotice(error.message); else { setNotice('Spielereignis gelöscht.'); await loadData(); }
-  }
-
   async function addLineup(e) {
     e.preventDefault();
     const { error } = await supabase.from('match_lineups').upsert({ ...newLineup, position_slot: newLineup.position_slot || null }, { onConflict: 'match_id,player_id' });
@@ -254,7 +231,7 @@ function App() {
       <header className="site-header">
         <div className="container header-inner">
           <button className="brand" onClick={() => { setActiveCompetition(null); go('overview'); }} aria-label="Home">
-            <img className="league-logo" src="/assets/eenhana-school-league-logo.jpeg" alt="Eenhana School League"/>
+            <img className="league-logo" src="/logo.jpeg" alt="Eenhana School League Logo" />
           </button>
           {activeCompetition && <nav className="desktop-nav">{nav.map(([id,label,Icon]) => <button key={id} className={tab===id?'active':''} onClick={()=>go(id)}>{label}</button>)}</nav>}
           <div className="header-actions">
@@ -360,8 +337,7 @@ function App() {
           {matchDetailTab==='report' ? <div className="match-center-body">
             <section className="match-story-card"><span className="kicker">DER SPIELBERICHT</span><h2>{reports.find(r=>String(r.match_id)===String(selectedMatch.id))?.title || (selectedMatch.status==='completed'?'Der Spielbericht':'Spielvorschau')}</h2><p>{reports.find(r=>String(r.match_id)===String(selectedMatch.id))?.body || (selectedMatch.status==='completed'?'Der offizielle Spielbericht wird von der Ligaleitung veröffentlicht.':'Informationen zu diesem Spiel werden vor dem Anpfiff veröffentlicht.')}</p></section>
             <section className="match-events-card"><div className="match-section-heading"><div><span className="kicker">ALLE WICHTIGEN MOMENTE</span><h2>Spielverlauf</h2></div><span className="event-ball">⚽</span></div>
-              {(events.filter(ev=>String(ev.match_id)===String(selectedMatch.id)).length || goals.filter(g=>String(g.match_id)===String(selectedMatch.id)).length) ? <div className="match-event-list">{(events.filter(ev=>String(ev.match_id)===String(selectedMatch.id)).length ? events.filter(ev=>String(ev.match_id)===String(selectedMatch.id)) : goals.filter(g=>String(g.match_id)===String(selectedMatch.id)).map(g=>({...g,event_type:'goal',details:null}))).sort((a,b)=>(Number(a.minute)||999)-(Number(b.minute)||999)).map(ev=><div className="match-event" key={ev.id}><div className="event-minute">{ev.minute?`${ev.minute}'`:'—'}</div><div className="event-marker">{ev.event_type==='goal'?'⚽':ev.event_type==='yellow_card'?'🟨':ev.event_type==='red_card'?'🟥':'🔄'}</div><div className="event-description"><b>{ev.player_name||'Spielereignis'}</b><small>{teamById(ev.team_id)?.name||'Mannschaft'}{ev.details?` · ${ev.details}`:''}</small></div>{isAdmin&&<div className="event-admin-actions"><button type="button" onClick={()=>startEditEvent(ev)} aria-label="Bearbeiten">✎</button><button type="button" onClick={()=>deleteEvent(ev)} aria-label="Löschen">−</button></div>}</div>)}</div> : <div className="empty-state">Noch keine Spielereignisse eingetragen.</div>}
-              {isAdmin && <form className="admin-form match-event-admin-form" onSubmit={saveEvent}><h3>{editingEvent?'Spielereignis bearbeiten':'Spielereignis hinzufügen'}</h3><input type="hidden" value={selectedMatch.id}/><div className="form-two"><label>Ereignis<select value={eventForm.event_type} onChange={e=>setEventForm({...eventForm,event_type:e.target.value})}><option value="goal">Tor</option><option value="penalty">Elfmeter</option><option value="own_goal">Eigentor</option><option value="yellow_card">Gelbe Karte</option><option value="red_card">Rote Karte</option><option value="substitution">Auswechslung</option></select></label><label>Minute<input type="number" min="1" max="120" value={eventForm.minute} onChange={e=>setEventForm({...eventForm,minute:e.target.value})}/></label></div><label>Mannschaft<select required value={eventForm.team_id} onChange={e=>setEventForm({...eventForm,team_id:e.target.value,player_id:'',player_name:''})}><option value="">Mannschaft wählen</option>{[selectedMatch.home_team_id,selectedMatch.away_team_id].map(id=><option key={id} value={id}>{teamById(id)?.name}</option>)}</select></label><label>Spieler (optional)<select value={eventForm.player_id} onChange={e=>setEventForm({...eventForm,player_id:e.target.value,player_name:''})}><option value="">Kein Spieler / Name unten eingeben</option>{players.filter(p=>String(p.team_id)===String(eventForm.team_id)).map(p=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select></label><label>Name (optional)<input value={eventForm.player_name} onChange={e=>setEventForm({...eventForm,player_name:e.target.value})} placeholder="Falls nicht im Kader"/></label><label>Details (optional)<input value={eventForm.details} onChange={e=>setEventForm({...eventForm,details:e.target.value})} placeholder="z. B. Elfmeter, Handspiel"/></label><div className="form-actions"><button className="primary-btn">{editingEvent?'Änderungen speichern':'Ereignis speichern'}</button>{editingEvent&&<button type="button" className="ghost-btn" onClick={()=>{setEditingEvent(null);setEventForm({event_type:'goal',match_id:'',team_id:'',player_id:'',player_name:'',minute:'',details:''});}}>Abbrechen</button>}</div></form>}
+              {goals.filter(g=>String(g.match_id)===String(selectedMatch.id)).length ? <div className="match-event-list">{goals.filter(g=>String(g.match_id)===String(selectedMatch.id)).sort((a,b)=>(Number(a.minute)||999)-(Number(b.minute)||999)).map(g=><div className="match-event" key={g.id}><div className="event-minute">{g.minute?`${g.minute}'`:'TOR'}</div><div className="event-marker">⚽</div><div className="event-description"><b>{g.player_name}</b><small>{teamById(g.team_id)?.name||'Mannschaft'}</small></div><span className="event-score">{g.team_id===selectedMatch.home_team_id?selectedMatch.home_score:selectedMatch.away_score}</span></div>)}</div> : <div className="empty-state">Noch keine Tore oder Spielereignisse eingetragen.</div>}
             </section>
           </div> : <div className="match-lineups-grid">
             {[['HEIMMANNSCHAFT',selectedMatch.home_team_id],['GASTMANNSCHAFT',selectedMatch.away_team_id]].map(([label,teamId])=>{const selectedLineups=lineups.filter(x=>String(x.match_id)===String(selectedMatch.id)&&String(x.team_id)===String(teamId));const squad=selectedLineups.map(x=>({...players.find(p=>String(p.id)===String(x.player_id)),...x})).filter(p=>p.id);return <section className="match-lineup-card" key={label}><span className="kicker">{label}</span><h2>{teamById(teamId)?.short_name||initials(teamById(teamId)?.name||'TEAM')} <small>{teamById(teamId)?.name}</small></h2><h3>Startelf</h3><div className="lineup-list">{squad.filter(p=>p.is_starting).map(p=><div className="lineup-player" key={p.id}><b>{p.shirt_number??'—'}</b><span>{p.full_name}</span><small>{p.position_slot||p.position||'Spieler'}</small></div>)}{!squad.some(p=>p.is_starting)&&<div className="empty-state">Startelf noch nicht veröffentlicht.</div>}</div><h3>Ersatzbank</h3><div className="lineup-list">{squad.filter(p=>!p.is_starting).map(p=><div className="lineup-player" key={p.id}><b>{p.shirt_number??'—'}</b><span>{p.full_name}</span><small>{p.position_slot||p.position||'Spieler'}</small></div>)}{!squad.some(p=>!p.is_starting)&&<div className="empty-state">Keine Ersatzspieler eingetragen.</div>}</div></section>})}
@@ -382,7 +358,7 @@ function App() {
         </div>}
       </main>}
 
-      <footer className="site-footer"><div className="container footer-main"><div className="footer-brand"><img className="league-logo footer-logo" src="/assets/eenhana-school-league-logo.jpeg" alt="Eenhana School League"/></div><p>Developing talent. Building community.<br/>Celebrating school football in Eenhana, Namibia.</p><div className="footer-links">{nav.map(([id,label])=><button key={id} onClick={()=>go(id)}>{label}</button>)}</div></div><div className="container footer-bottom"><span>© 2027 Eenhana School League</span><span>MADE FOR THE LOVE OF THE GAME</span></div></footer>
+      <footer className="site-footer"><div className="container footer-main"><div className="footer-brand"><img className="league-logo footer-logo" src="/logo.jpeg" alt="Eenhana School League Logo" /></div><p>Developing talent. Building community.<br/>Celebrating school football in Eenhana, Namibia.</p><div className="footer-links">{nav.map(([id,label])=><button key={id} onClick={()=>go(id)}>{label}</button>)}</div></div><div className="container footer-bottom"><span>© 2027 Eenhana School League</span><span>MADE FOR THE LOVE OF THE GAME</span></div></footer>
 
       {loginOpen&&<div className="modal-backdrop" onClick={()=>setLoginOpen(false)}><div className="login-modal" onClick={e=>e.stopPropagation()}><button className="modal-close" onClick={()=>setLoginOpen(false)}><X/></button><span className="modal-icon"><LockKeyhole/></span><span className="kicker">RESTRICTED ACCESS</span><h2>Admin login</h2><p>Sign in with your authorised league administrator account.</p><form onSubmit={login}><label>Email address<input type="email" required value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></label><label>Password<input type="password" required value={form.password} onChange={e=>setForm({...form,password:e.target.value})}/></label><button className="primary-btn">Sign in <ArrowUpRight size={16}/></button></form><small>Administrator accounts are created in Supabase. Public visitors do not need an account.</small></div></div>}
       <button className="refresh-fab" onClick={loadData} title="Refresh league data"><RefreshCw size={17}/></button>

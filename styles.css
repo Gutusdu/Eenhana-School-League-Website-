@@ -71,14 +71,6 @@
 .admin-existing-empty{font-size:13px;color:#78837a;margin:12px 0 4px}
 .admin-existing-list .admin-existing-heading{border-bottom:0}
 
-/* Official Eenhana School League identity */
-.league-logo{display:block;width:64px;height:64px;object-fit:contain;border-radius:10px;background:#fff;flex:0 0 auto}
-.footer-logo{width:76px;height:76px}
-.brand{display:flex;align-items:center;gap:12px}
-.footer-brand{display:flex;align-items:center;gap:12px}
-.event-admin-actions{display:flex;gap:6px;margin-left:auto}
-.event-admin-actions button{border:1px solid rgba(255,255,255,.18);background:transparent;color:inherit;border-radius:7px;padding:5px 9px;cursor:pointer}
-.match-event-admin-form{margin-top:20px;padding:18px;border:1px solid var(--line,#ddd);border-radius:14px}
-.match-event-admin-form h3{margin-top:0}
-.form-actions{display:flex;gap:10px;flex-wrap:wrap}
-@media(max-width:640px){.league-logo{width:52px;height:52px}.footer-logo{width:64px;height:64px}}
+/* League identity: logo file is stored beside index.html (no assets folder). */
+.league-logo{display:block;width:58px;height:58px;object-fit:contain;border-radius:8px;background:#fff;padding:2px;flex:0 0 auto}.footer-logo{width:68px;height:68px}
+@media(max-width:520px){.league-logo{width:48px;height:48px}.footer-logo{width:58px;height:58px}}
